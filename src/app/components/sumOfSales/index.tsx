@@ -2,103 +2,132 @@
 import React, {useEffect, useState} from 'react';
 import PivotTable from '../charts/pivot';
 import {states} from '../../constants';
+import { KeyValuePair } from 'tailwindcss/types/config';
 const salesData = require('../../assets/data/sales-orders.json')
-let dataSet = {
-    title: '',
-    dimensions: {
-        states: states
-    },
-    categories: [
-    ]
+let salesDataUrl = '../../data/sales-orders.json';
+
+type DatasetType = {
+    title: string,
+    dimensions: Array<any>,
+    categories: Array<CategoryType>,
+    metrics?: Array<MetricType>,
+}
+type MetricType = {
+    parent: string,
+    label: string,
+    values?: Array<DimensionValueType>
+}
+
+let dataSet:DatasetType = {
+    title: 'Sum of Sales',
+    dimensions: [{
+        useHeader: true, 
+        title: 'Purchases',
+        fixed_x: true,
+        fixed_y: true,
+        cols: [
+            {
+                title: 'Category', 
+                fixed_x: true,
+                fixed_y: false
+            },
+            {
+                title: 'Sub Category',
+                fixed_x: true,
+                fixed_y: true
+            }
+        ]
+    },{
+        useHeader: true, 
+        title: 'States',
+        cols: states.map(state => ({
+            title: state,
+            fixed_x:false,
+            fixed_y: true,
+        }))
+    }],
+    categories: [],
+    metrics: []
 };
+
+type DimensionValueType = {
+    dimension: string,
+    value: number
+}
+
+type CategoryType = {
+    title: string,
+    collapsible: boolean
+}
+
 export default function sumOfSales() {
-    const [data, setData] = useState(null);
+    const [data, setData] = useState([]);
     const [error, setError] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-       handleData();
-    })
-    const handleData =  function () {
+        fetchData();
+    }, [])
+   
+
+    const fetchData = () => {
         setLoading(true);
-        //api endpoint for sales data here
-        try {
-            const res = salesData;
-        
-            res.forEach((order, i) => {
-                const category = order.category;
-                const subcat = order.subCategory;
-                const state = order.state;
-                const sales = order.sales;
-                console.log(dataSet);
-                addDimension(state, sales, category, subcat);
-            });
-            
-        } catch (err:any) {
-            setError(err.message ||  "Unexpected Error!")
-        } finally {
-            setLoading(false);
-            if (error === false) {
-                setData(dataSet);
-                console.log(data);
-            }
-        }
-      
-    }
-
-    const addCategory = function (category:string) {
-        if (!dataSet.categories.find(x =>x.label === category)) {
-            let set = {
-                label: category,
-                subCategories: []
-            }
-            dataSet.categories.push(set);
-            return data.categories.findIndex(x => x.label === category);
-        }
-        
-    }
-
-    const addSubCategory = function (catkey, category, subcat) {
-        if(!dataSet.categories[catkey]) {
-            addCategory(category)
-        }
-        if(!dataSet.categories[catkey].subCategories.find(x => x.label === subcat)) {
-            let set = {
-                label: subcat,
-                dimensions: []
-            }
-            dataSet.categories[catkey].subCategories.push(set);
-            return dataSet.categories[catkey].subCategories.findIndex(x => x.label === subcat);
-        }
-    }
-
-    const addDimension = function (dimension, dimensionValue, category, subcat){
-        //Add Category if it doesn't exist.
-        let catKey = dataSet.categories.findIndex(x => x.label === category) ?? -1;
-        if (catKey < 0) {
-            console.log('add category');
-            catKey = addCategory(category);
-        }
-
-        let subcatKey = dataSet.categories[catKey].subCategories.findIndex(x => x.label === subcat) ?? -1;
-        if(subcatKey < 0 ) {
-            console.log('add sub');
-            subcatKey = addSubCategory(catKey,category,subcat);
-        }
-
-        let dimKey = dataSet.categories[catKey].subCategories[subcatKey].dimensions.findIndex(x => x.label === dimension) ?? -1;
-        if(dimKey < 0){
-            dataSet.categories[catKey].subCategories[subcatKey].dimensions.push({
-                label: dimension,
-                value: dimensionValue
+        fetch(salesDataUrl)
+            .then(res => res.json())
+            .then(data => {
+                handleData(data)
+                setLoading(false);
             })
-        } else {
-            let dimensionObj = dataSet.categories[catKey].subCategories[subcatKey].dimensions[dimKey];
-            if (dimensionObj) {
-                dimensionObj.value += dimensionValue;
-            }
-        }
-        
-        return dataSet;
+            .catch((error) => {
+                console.log(error);
+                setError(error.msg);
+                setLoading(false);
+              });
     }
+
+    const handleData = (orders:Array<object>) => {
+        setLoading(true);
+
+
+        const categories = [...new Set(orders.map(item => item.category))];
+        let tableData = categories.map(category  => {
+            const subcategories =  [...new Set(orders.filter(item => item.category === category).map(item => item.subCategory))];
+            const rowData = {
+                Category: category,
+                SubCategories: [],
+                Totals:[]
+            };
+
+            subcategories.forEach((subcategory, i) => {
+                rowData.SubCategories[i] = {
+                    label: subcategory,
+                    states: []
+                }
+                states.forEach(state => {
+                        const sales = orders
+                            .filter(item => item.subCategory === subcategory && item.state === String(state))
+                            .reduce((sum, item) => sum + item.sales, 0);
+                        rowData.SubCategories[i].states[state] = sales.toFixed(2)
+                        const catTotal = orders
+                            .filter(item => item.category === category && item.state === String(state))
+                            .reduce((sum, item) => sum = sum + item.sales, 0)
+                        rowData.Totals[state] = catTotal.toFixed(2)
+                    });
+                return rowData
+
+            })
+            return rowData
+        })
+        setData(tableData);
+    }
+   
+    if(loading) {
+        return  <div className={'loader'}> Loading </div>
+    } else if (data === null) {
+        return <div className={'loader'}> <span className={'alert'}>No data available.</span></div>
+    } else {
+        //return 'done';
+       return <PivotTable title="Sum of Sales" xlabel='Purchases' tableData={data} ylabel='States' cols={states} />
+    }
+   
 }
