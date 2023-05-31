@@ -68,8 +68,6 @@ export default function sumOfSales() {
     useEffect(() => {
         fetchData();
     }, [])
-
-    const tableContainer = useRef(null);
    
     const fetchData = () => {
         setLoading(true);
@@ -85,13 +83,6 @@ export default function sumOfSales() {
                 setLoading(false);
               });
     }
-
-    const handleScroll = function(scrollAmount) {
-        tableContainer.current.scrollTo({
-            left: scrollAmount,
-            behavior: 'smooth',
-        });
-    }   
 
     const handleData = (orders:Array<object>) => {
         setLoading(true);
@@ -133,7 +124,7 @@ export default function sumOfSales() {
         return <div className={'loader'}> <span className={'alert'}>No data available.</span></div>
     } else {
         //return 'done';
-       return <div ref={tableContainer} class="table-container"><PivotTable title="Sum of Sales" xlabel='Purchases' handleScroll={handleScroll} tableData={data} ylabel='States' cols={states} /></div>
+       return <PivotTable title="Sum of Sales" xlabel='Products' tableData={data} ylabel='States' cols={states} />
     }
    
 }

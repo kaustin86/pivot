@@ -19,9 +19,9 @@ const AggregationRow = function ({title, cols, data, btn, collapsed=false}) {
             <td className="category bold sticky-left" colSpan={2}>
             {collapsed && btn}
              {title}</td>
-            {cols.map(state => {
+            {cols.map((state, i) => {
                 return (
-                    <td className="text-right data bold">{calculateColumnTotal(state)}</td>
+                    <td key={i}className="text-right data bold">{calculateColumnTotal(state)}</td>
                 )
             })}
         </tr>

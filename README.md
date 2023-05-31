@@ -13,22 +13,23 @@ pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
 This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
 
-## Learn More
+## Architectural Overview
+- Component\SumOfSales: Where data is pulled from a provided endpoint and processed for the Pivot Table
+- Charts\Pivot: Main reusable component.
+- Charts\Pivot\Header and Subheader: Houses dimension data, basic column/chart titles and scroll functionality.
+- Charts\Pivot\Category and SubCategory: Maps all chart data.
+- Charts\Pivot\AggregationRow: Sum of values based on dimensions and data provided
 
-To learn more about Next.js, take a look at the following resources:
+## Simplifications Made:
+- Tables for the basic front end structure. This saved a ton of time up front, and was ultimately a performance improvement. 
+- Left system scrollbars visible. In any case where the custom scroll action may fail for a user, we'll be able to fall back on the existing system scrollbars. 
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+## Next Steps:
+- Add other calculation methods for the pivot chart component. 
+- Bug fix. The scrollbar resizes/sets boundaries incorrectly after resizing the window. 
+- Add unit tests with jest. 
+- Add finesse for front end. Items such as animating collapsible actions, and a few hover effects. 
+    One namely for hovering over data to hightlight the row and column the mouse is over. 
+- Add routing to support more charts.

@@ -1,9 +1,16 @@
 $inset-shadow:  inset 8px 0 6px -6px #00000025; 
 $category-shadow: 5px 5px 5px #00000025;
 $primary: rgb(8,42,111);
+.table-container {
+    width:calc(100% - 30px);
+    max-height: 95vh;
+    margin:0 auto;
+    border:5px solid #FFF;
+    box-shadow: 3px 3px 5px 5px #00000025;
+    overflow:scroll;
+    padding-right:17px;
+    box-sizing:padding-box;scrollbar-width: none;
 
-.data ~ .data {
-    box-shadow:none;
 }
 
 .sticky {
@@ -23,6 +30,9 @@ $primary: rgb(8,42,111);
         position: sticky;
         left:0;
         z-index:5;
+        &.subcategory {
+            left:212px;
+        }
     }
     &-right{
         position: -webkit-sticky;
@@ -36,30 +46,40 @@ $primary: rgb(8,42,111);
     }
 
 }
-.aggregation-row td, .aggregation-row tr{
-    background: rgb(238,238, 238);
-    border-bottom-width:1px;
-    border-top-width:1px;
-    border-color: #CCC !important;
-    background-clip:padding-box;
-}
-.aggregation-row {
-    border-width:1px;
-    border-color:#CCC;
-    border-style:solid;
-}
+
+
+
+
+
 
 table {
     white-space: nowrap; 
     background-clip: padding-box;
+    .category {
+        padding-left:30px;
+        min-width:175px;
+    }
      .category:first-child + td, .aggregation-row td.category  {
         box-shadow:$category-shadow;
-     }
-     .aggregation-row td.category+td {
+        &+ td {
+            padding-left:30px;
+        }
+    }
+    .aggregation-row td.category+td {
         border:none;
         background-clip:border-box;
         box-shadow:none;
-     }
+    }
+    td {
+        padding:10px 5px;
+        font-size:.75em;
+        background:#FFF;
+        box-sizing:border-box;
+        background-clip: padding-box;
+        &.data:first-child{
+            padding-left:30px;
+        }
+    }
     thead {
         color:#FFF;
         background: $primary;
@@ -85,7 +105,6 @@ table {
                 top:0;
             }
         }
-
         .chart-subheader {
             color: #FFFFFF75;
             text-transform:none;
@@ -94,13 +113,23 @@ table {
                 &:first-child + th {
                     box-shadow: 5px 0 5px -3px #00000050;
                 }
+                user-select:none;
+                -webkit-user-select: none; /* Safari */
             }
         }
         
         .title-container {
             position:sticky;
-            width:calc(100vw - 400px);
-            left:355px;
+            width:calc(100vw - 375px);
+            left:325px;
+            button {
+                opacity: .75;
+                cursor:pointer;
+                &:hover {
+                    opacity: 1;
+                    transition-duration:500ms;
+                }
+            }
         }
         .sticky-left, .sticky-top, &.sticky-top{
             z-index:15;
@@ -109,20 +138,30 @@ table {
             }
         }
     }
-    td {
-        padding:10px 5px;
-        font-size:.75em;
-        background:#FFF;
-        box-sizing:border-box;
-        background-clip: padding-box;
-    }
-    
-    .subcategory {
-        min-width:100px;
-        &.sticky-left {
-            left:213px;
+    tbody {
+        .category, .subcategory {
+            background: rgb(245,245,245);
+            background-clip:padding-box;
+        }
+        .subcategory {
+            color: rgb(75,75,75);
         }
     }
+    .aggregation-row td, .aggregation-row tr{
+        background: rgb(238,238, 238);
+        border-bottom-width:1px;
+        border-top-width:1px;
+        border-color: #CCC !important;
+        background-clip:padding-box;
+    }
+    
+    .aggregation-row {
+        border-width:1px;
+        border-color:#CCC;
+        border-style:solid;
+    }
+    
+    
     .aggregation-row td{
         background-clip: padding-box;
         border-top:1px solid #CCC;

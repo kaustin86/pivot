@@ -1,66 +1,182 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, forwardRef, useCallback} from 'react';
 import SubHeader from '../subheader';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import styled from 'styled-components';
 import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 
-const Header = (props) => {
+const Header = forwardRef(function (props, contentRef) {
 
-    const [scrollpos, setscrollpos]  = useState(0);
-    const [scrollwidth, setscrollwidth] = useState(0);
-    const titleContainer = useRef(null)
-    const scrollbar = useRef(null);
-    const headerContainer = useRef(null);
-    useEffect( () => {
-        calcScrollWidth()
-    })
-    const calcScrollWidth = function () {
-        const refWidth = window.innerWidth;
-        if(!scrollbar.current || !headerContainer.current) {
-            return false
+    const scrollTrackRef = useRef<HTMLDivElement>(null);
+    const scrollThumbRef = useRef<HTMLDivElement>(null);
+    const observer = useRef<ResizeObserver | null>(null);
+    const [thumbWidth, setThumbWidth] = useState(20);
+    const [scrollStartPosition, setScrollStartPosition] = useState<number | null>(
+        null
+    );
+    const [initialScrollLeft, setInitialScrollLeft] = useState<number>(0);
+    const [isDragging, setIsDragging] = useState(false);
+    function handleResize(ref: HTMLDivElement, trackSize: number) {
+        const { clientWidth, scrollWidth } = ref;
+        setThumbWidth(Math.max((clientWidth / scrollWidth) * trackSize, 20));
+      }
+    
+      function handleScrollButton(direction: 'left' | 'right') {
+        const { current } = contentRef;
+        if (current) {
+          const scrollAmount = direction === 'right' ? 200 : -200;
+          current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
         }
-        const width = refWidth/headerContainer.current.offsetWidth*1000;
-        setscrollwidth(width);
-    }
-
-    const handleChange = function (direction) {
-        const currentPos = scrollpos;
-        const shift = headerContainer.current.offsetWidth / 10;
-        if(!headerContainer.current || !scrollbar.current) {
-            return false;
+      }
+    
+      const handleTrackClick = useCallback(
+        (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const { current: trackCurrent } = scrollTrackRef;
+          const { current: contentCurrent } = contentRef;
+          if (trackCurrent && contentCurrent) {
+            const { clientX } = e;
+            const target = e.target as HTMLDivElement;
+            const rect = target.getBoundingClientRect();
+            const trackLeft = rect.left;
+            const thumbOffset = -(thumbWidth / 2);
+            const clickRatio =
+              (clientX - trackLeft + thumbOffset) / trackCurrent.clientWidth;
+            const scrollAmount = Math.floor(
+              clickRatio * contentCurrent.scrollWidth
+            );
+            contentCurrent.scrollTo({
+              left: scrollAmount,
+              behavior: 'smooth',
+            });
+          }
+        },
+        [thumbWidth]
+      );
+    
+      const handleThumbPosition = useCallback(() => {
+        if (
+          !contentRef.current ||
+          !scrollTrackRef.current ||
+          !scrollThumbRef.current
+        ) {
+          return;
         }
-        const containerWidth = titleContainer.current.offsetWidth;
-        const maxStep = headerContainer.current.offsetWidth-containerWidth;
-        if(direction === 'right') {
-            const newPos = maxStep < scrollpos+shift ? maxStep : scrollpos+shift;
-            setscrollpos(newPos);
+        const { scrollLeft: contentLeft, scrollWidth: contentWidth } =
+          contentRef.current;
+        const { clientWidth: trackWidth } = scrollTrackRef.current;
+        let newLeft = (+contentLeft / +contentWidth) * trackWidth;
+        newLeft = Math.min(newLeft, trackWidth - thumbWidth);
+        const thumb = scrollThumbRef.current;
+        thumb.style.left = `${newLeft}px`;
+      }, []);
+    
+      const handleThumbMousedown = useCallback((e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        setScrollStartPosition(e.clientX)
+        if (contentRef.current) setInitialScrollLeft(contentRef.current.scrollLeft);
+  
+        setIsDragging(true);
+      }, []);
+    
+      const handleThumbMouseup = useCallback(
+        (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (isDragging) {
+            setIsDragging(false);
+          }
+        },
+        [isDragging]
+      );
+    
+      const handleThumbMousemove = useCallback(
+        (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (isDragging) {
+            const {
+              scrollWidth: contentScrollWidth,
+              offsetWidth: contentOffsetWidth,
+            } = contentRef.current;
+      
+            // Subtract the current mouse y position from where you started to get the pixel difference in mouse position. Multiply by ratio of visible content height to thumb height to scale up the difference for content scrolling.
+            const deltaX =
+              (e.clientX- scrollStartPosition) *
+              (contentOffsetWidth / thumbWidth);
+            const newScrollLeft = Math.min(
+              initialScrollLeft + deltaX,
+              contentScrollWidth - contentOffsetWidth
+            );
+      
+            contentRef.current.scrollLeft = newScrollLeft;
+          }
+        },
+        [isDragging, scrollStartPosition, thumbWidth]
+      );
+    
+      // If the content and the scrollbar track exist, use a ResizeObserver to adjust Width of thumb and listen for scroll event to move the thumb
+      useEffect(() => {
+        if (contentRef.current && scrollTrackRef.current) {
+          const ref = contentRef.current;
+          const { clientWidth: trackSize } = scrollTrackRef.current;
+          console.log(scrollTrackRef.current);
+          observer.current = new ResizeObserver(() => {
+            handleResize(ref, trackSize);
+          });
+          observer.current.observe(ref);
+          ref.addEventListener('scroll', handleThumbPosition);
+          return () => {
+            observer.current?.unobserve(ref);
+            ref.removeEventListener('scroll', handleThumbPosition);
+          };
         }
-        if(direction === 'left') {
-            const newPos = currentPos-shift < 0 ? 0 : currentPos-shift;
-            setscrollpos(newPos);
-        }
-        props.handleScroll(scrollpos);
-    }
+      }, []);
+      // Listen for mouse events to handle scrolling by dragging the thumb
+      useEffect(() => {
+        document.addEventListener('mousemove', handleThumbMousemove);
+        document.addEventListener('mouseup', handleThumbMouseup);
+        document.addEventListener('mouseleave', handleThumbMouseup);
+        
+        return () => {
+          document.removeEventListener('mousemove', handleThumbMousemove);
+          document.removeEventListener('mouseup', handleThumbMouseup);
+          document.removeEventListener('mouseleave', handleThumbMouseup);
+        };
+      }, [handleThumbMousemove, handleThumbMouseup]);
 
     return(
         <thead className="sticky-top">
             <tr  className='chart-header'>
-                <th colSpan={2} className="text-left sticky-left">{props.xlabel}</th>
-                <th ref={headerContainer} colSpan={props.cols.length} className="data sticky-left">
-                    <div ref={titleContainer} className="title-container">
+                <th colSpan={2} className="text-left sticky-left category">{props.xlabel}</th>
+                <th colSpan={props.cols.length} className="data sticky-left">
+                    <div className="title-container">
                         <div className="title" style={{width:'calc(100vw-200)', display: 'inline-block'}}>
-                            <Button $direction='left' onClick={() => handleChange('left')} className="scroller nav-left" ><FontAwesomeIcon icon={faAngleLeft} /></Button>
+                            <Button $direction='left'  onClick={() => handleScrollButton('left')} className="scroller nav-left" ><FontAwesomeIcon icon={faAngleLeft} /></Button>
                             {props.ylabel}
-                            <Button $direction='right' onClick={() => handleChange('right')} className="scroller nav-right"><FontAwesomeIcon icon={faAngleRight}/></Button>
+                            <Button $direction='right' onClick={() => handleScrollButton('right')} className="scroller nav-right"><FontAwesomeIcon icon={faAngleRight}/></Button>
                         </div>
-                        <Scrollbar className="scrollbar" ref={scrollbar}  $width={scrollwidth} $scrollpos={scrollpos}/>
+                        <ScrollTrack ref={scrollTrackRef} onClick={handleTrackClick}>
+                            <Scrollbar onMouseDown={handleThumbMousedown} className="scrollbar" ref={scrollThumbRef} style={{
+                                width: `${thumbWidth}px`,
+                                cursor: isDragging ? 'grabbing' : 'grab',
+                            }} />
+                        </ScrollTrack>
+                            
                     </div>
                 </th>
             </tr>
-            <SubHeader cols={props.cols} scrollpos={scrollpos}/>
+            <SubHeader cols={props.cols} scrollpos={scrollStartPosition}/>
         </thead>
     )
-}
+})
+const ScrollTrack = styled.div`
+    position:relative;
+    top:55px;
+    height:6px;
+`
 const Button = styled.button<{$direction: string}>`
     display:inline-block;
     position:absolute;
@@ -71,11 +187,9 @@ const Scrollbar = styled.div<{$width: number, $scrollpos: number}>`
     border-width:2px;
     border-radius:2px;
     position:relative;
-    top:55px;
-    height:2px;
+    height:4px;
     background:#FFFFFF50;
     width: ${props=> props.$width}px;
     left: ${props=> props.$scrollpos/5}px;
-    transition: left 2s;
 `
 export default Header
