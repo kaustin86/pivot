@@ -1,5 +1,5 @@
 "use client"; 
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import PivotTable from '../charts/pivot';
 import {states} from '../../constants';
 import { KeyValuePair } from 'tailwindcss/types/config';
@@ -68,8 +68,9 @@ export default function sumOfSales() {
     useEffect(() => {
         fetchData();
     }, [])
-   
 
+    const tableContainer = useRef(null);
+   
     const fetchData = () => {
         setLoading(true);
         fetch(salesDataUrl)
@@ -85,10 +86,15 @@ export default function sumOfSales() {
               });
     }
 
+    const handleScroll = function(scrollAmount) {
+        tableContainer.current.scrollTo({
+            left: scrollAmount,
+            behavior: 'smooth',
+        });
+    }   
+
     const handleData = (orders:Array<object>) => {
         setLoading(true);
-
-
         const categories = [...new Set(orders.map(item => item.category))];
         let tableData = categories.map(category  => {
             const subcategories =  [...new Set(orders.filter(item => item.category === category).map(item => item.subCategory))];
@@ -127,7 +133,7 @@ export default function sumOfSales() {
         return <div className={'loader'}> <span className={'alert'}>No data available.</span></div>
     } else {
         //return 'done';
-       return <PivotTable title="Sum of Sales" xlabel='Purchases' tableData={data} ylabel='States' cols={states} />
+       return <div ref={tableContainer} class="table-container"><PivotTable title="Sum of Sales" xlabel='Purchases' handleScroll={handleScroll} tableData={data} ylabel='States' cols={states} /></div>
     }
    
 }

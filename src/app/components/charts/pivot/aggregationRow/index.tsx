@@ -1,6 +1,6 @@
 import React from "react"
 
-const AggregationRow = function ({title, cols, data, collapsed=false}) {
+const AggregationRow = function ({title, cols, data, btn, collapsed=false}) {
 
     const calculateColumnTotal = (columnIndex) => {
         let total = 0;
@@ -16,10 +16,12 @@ const AggregationRow = function ({title, cols, data, collapsed=false}) {
    
       return  (
         <tr className="aggregation-row">
-            <td className="category" colSpan={2}>{title}</td>
+            <td className="category bold sticky-left" colSpan={2}>
+            {collapsed && btn}
+             {title}</td>
             {cols.map(state => {
                 return (
-                    <td className="text-right">{calculateColumnTotal(state)}</td>
+                    <td className="text-right data bold">{calculateColumnTotal(state)}</td>
                 )
             })}
         </tr>

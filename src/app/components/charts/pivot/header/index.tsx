@@ -1,60 +1,81 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import SubHeader from '../subheader';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import styled from 'styled-components';
+import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 
-export default class Header extends React.Component {
-    constructor(props) {
-        super(props)
-        this.headerContainer = React.createRef()
-        this.scrollbar = React.createRef();
-        this.state = {
-            scrollpos: 0,
-            scrollwidth: 0,
+const Header = (props) => {
+
+    const [scrollpos, setscrollpos]  = useState(0);
+    const [scrollwidth, setscrollwidth] = useState(0);
+    const titleContainer = useRef(null)
+    const scrollbar = useRef(null);
+    const headerContainer = useRef(null);
+    useEffect( () => {
+        calcScrollWidth()
+    })
+    const calcScrollWidth = function () {
+        const refWidth = window.innerWidth;
+        if(!scrollbar.current || !headerContainer.current) {
+            return false
         }
-        this.handleChange = this.handleChange.bind(this);
+        const width = refWidth/headerContainer.current.offsetWidth*1000;
+        setscrollwidth(width);
     }
 
-    calcScrollWidth() {
-        const windowWidth = window.innerWidth;
-    }
-
-    handleChange(shift, direction) {
-        const currentPos = this.state.scrollpos;
-        const containerWidth = this.headerContainer.current.offsetWidth;
-        const scrollbarWidth = this.scrollbar.current.offsetWidth;
-        const maxStep = containerWidth-scrollbarWidth;
+    const handleChange = function (direction) {
+        const currentPos = scrollpos;
+        const shift = headerContainer.current.offsetWidth / 10;
+        if(!headerContainer.current || !scrollbar.current) {
+            return false;
+        }
+        const containerWidth = titleContainer.current.offsetWidth;
+        const maxStep = headerContainer.current.offsetWidth-containerWidth;
         if(direction === 'right') {
-            const newPos = maxStep < currentPos+shift ? maxStep : currentPos+shift;
-            this.setState(newPos);
+            const newPos = maxStep < scrollpos+shift ? maxStep : scrollpos+shift;
+            setscrollpos(newPos);
         }
         if(direction === 'left') {
             const newPos = currentPos-shift < 0 ? 0 : currentPos-shift;
-            this.setState(newPos);
+            setscrollpos(newPos);
         }
+        props.handleScroll(scrollpos);
     }
 
-    render(){
-        return(
-            <tr ref="headerContainer" className='chart-header sticky'>
-                <th colSpan={2} className="text-left">{this.props.xlabel}</th>
-                <th colSpan={this.props.cols.length} className="td">
-                    <div className="title-container">
-                        <div className="scroller nav-left"><button onClick={() => this.handleChange(this.props.step, 'left')}  >{'<'}</button></div>
-                        <div className="title">{this.props.ylabel}</div>
-                        <div className="scroller nav-right"><button onClick={() => this.handleChange(this.props.step, 'right')} >{'>'}</button></div>
-                        <div className="scrollbar" ref="scrollbar" style={{left: this.state.scrollpos, width: this.props.scrollwidth}}></div>
+    return(
+        <thead className="sticky-top">
+            <tr  className='chart-header'>
+                <th colSpan={2} className="text-left sticky-left">{props.xlabel}</th>
+                <th ref={headerContainer} colSpan={props.cols.length} className="data sticky-left">
+                    <div ref={titleContainer} className="title-container">
+                        <div className="title" style={{width:'calc(100vw-200)', display: 'inline-block'}}>
+                            <Button $direction='left' onClick={() => handleChange('left')} className="scroller nav-left" ><FontAwesomeIcon icon={faAngleLeft} /></Button>
+                            {props.ylabel}
+                            <Button $direction='right' onClick={() => handleChange('right')} className="scroller nav-right"><FontAwesomeIcon icon={faAngleRight}/></Button>
+                        </div>
+                        <Scrollbar className="scrollbar" ref={scrollbar}  $width={scrollwidth} $scrollpos={scrollpos}/>
                     </div>
                 </th>
-                <SubHeader scrollpos={this.state.scrollpos}/>
             </tr>
-        )
-
-    }
+            <SubHeader cols={props.cols} scrollpos={scrollpos}/>
+        </thead>
+    )
 }
-export const Header = (props) => {
-    let [scrollpos, setscrollpos] = useState(0);
-    let [scrollWidth, setscrollwidth] = useState(0);
-
-    
-}
-
-export default Header;
+const Button = styled.button<{$direction: string}>`
+    display:inline-block;
+    position:absolute;
+    ${props=>props.$direction === 'left' ?'left: 0': 'right:0'};
+    float:left;
+`
+const Scrollbar = styled.div<{$width: number, $scrollpos: number}>`
+    border-width:2px;
+    border-radius:2px;
+    position:relative;
+    top:55px;
+    height:2px;
+    background:#FFFFFF50;
+    width: ${props=> props.$width}px;
+    left: ${props=> props.$scrollpos/5}px;
+    transition: left 2s;
+`
+export default Header
