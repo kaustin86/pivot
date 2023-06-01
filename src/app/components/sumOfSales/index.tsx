@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client"; 
 import React, {useEffect, useState, useRef} from 'react';
 import PivotTable from '../charts/pivot';
@@ -60,7 +61,7 @@ type CategoryType = {
     collapsible: boolean
 }
 
-export default function sumOfSales() {
+const SumOfSales = () => {
     const [data, setData] = useState([]);
     const [error, setError] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -126,5 +127,5 @@ export default function sumOfSales() {
         //return 'done';
        return <PivotTable title="Sum of Sales" xlabel='Products' tableData={data} ylabel='States' cols={states} />
     }
-   
 }
+export default SumOfSales

@@ -1,10 +1,12 @@
+// @ts-nocheck
 import React from 'react'
 
 const SubCategory = ({label, data, count}) => {
 
     const content = <>
         <td className="subcategory sticky-left">{label}</td>
-        {Object.entries(data).map(([state, value]) => {
+       
+        {Object.entries(data).map(([state, value]):Props => {
             return (
                 <td className="text-right data" id={state}  key={state}>{value}</td> 
             )

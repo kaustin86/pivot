@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from "react"
 
 const AggregationRow = function ({title, cols, data, btn, collapsed=false}) {

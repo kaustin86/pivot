@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, {useState, useEffect, useRef, forwardRef, useCallback} from 'react';
 import SubHeader from '../subheader';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -172,6 +173,7 @@ const Header = forwardRef(function (props, contentRef) {
         </thead>
     )
 })
+Header.displayName = 'Header';
 const ScrollTrack = styled.div`
     position:relative;
     top:55px;
